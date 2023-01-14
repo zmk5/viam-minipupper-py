@@ -56,19 +56,20 @@ class Controller:
             BehaviorState.REST: BehaviorState.DEACTIVATED,
         }
 
-    def dance_active(self, command):
+    def dance_active(self, command) -> bool:
 
-        if command.dance_activate_event == True:
+        if command.dance_activate_event is True:
 
-            if self.dance_active_state == False:
+            if self.dance_active_state is False:
                 self.dance_active_state = True
-            elif self.dance_active_state == True:
+            else:
                 self.dance_active_state = False
 
         return True
 
-    def step_gait(self, state, command):
+    def step_gait(self, state, command) -> np.ndarray:
         """Calculate the desired foot locations for the next timestep
+
         Returns
         -------
         Numpy array (3, 4)
@@ -177,7 +178,7 @@ class Controller:
                 self.config.yaw_time_constant,
             )
             # Set the foot locations to the default stance plus the standard height
-            print("act:", self.dance_active_state)
+            print(f"act: {self.dance_active_state}")
             # self.dance_active_state = True
             if self.dance_active_state == False:
 

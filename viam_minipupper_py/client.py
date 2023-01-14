@@ -1,18 +1,4 @@
 #!/usr/bin/env python3
-# from viam import logging
-# from viam.robot.client import RobotClient
-# from viam.rpc.dial import DialOptions
-
-# async def connect() -> RobotClient:
-#     options = RobotClient.Options(
-#         dial_options=DialOptions(insecure=True),
-#         log_level=logging.FATAL
-#     )
-#     return await RobotClient.at_address('localhost:9090', options)
-
-# async def cleanup():
-#     await robot.close()
-
 import asyncio
 
 from viam.components.arm import Arm

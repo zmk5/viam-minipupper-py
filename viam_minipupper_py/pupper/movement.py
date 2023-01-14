@@ -1,4 +1,5 @@
-from ActuatorControl import ActuatorControl
+from typing import List
+from viam_minipupper_py.pupper.control.actuator import ActuatorControl
 
 LocationStanding = [
     [0.06, 0.06, -0.06, -0.06],
@@ -29,7 +30,7 @@ class SequenceInterpolation:
         self.PointNow = [0, 0, 0]
         self.PointPrevious = [0, 0, 0]
 
-    def setCycleType(self, cycle_type, cycle_index):
+    def setCycleType(self, cycle_type: str, cycle_index: int) -> bool:
 
         if cycle_type == "Forever":
             self.SequenceExecuteCounter = 9999
@@ -40,12 +41,12 @@ class SequenceInterpolation:
 
         return True
 
-    def setInterpolationNumber(self, interpolation_number):
+    def setInterpolationNumber(self, interpolation_number: int) -> bool:
 
         self.InterpolationNumber = interpolation_number
         return True
 
-    def setSequencePoint(self, sequence):
+    def setSequencePoint(self, sequence) -> bool:
 
         self.SequencePoint = sequence
         self.PhaseNumberMax = len(sequence)
@@ -65,7 +66,7 @@ class SequenceInterpolation:
 
         return True
 
-    def updatePointPhase(self):
+    def updatePointPhase(self) -> bool:
 
         # update start point phase
         self.PointPhaseStart = self.PointPhaseStart + 1
@@ -89,7 +90,7 @@ class SequenceInterpolation:
 
         return True
 
-    def updateInterpolationDelt(self):
+    def updateInterpolationDelt(self) -> bool:
 
         # get start and stop point
         point_start = self.SequencePoint[self.PointPhaseStart]
@@ -102,7 +103,7 @@ class SequenceInterpolation:
 
         return True
 
-    def getNewPoint(self):
+    def getNewPoint(self) -> List[int]:
 
         # update movement tick
         self.ExecuteTick = self.ExecuteTick + 1
@@ -159,7 +160,7 @@ class Movements:
         ]  # x,y,z for 4 legs
         self.ActuatorsAngleOutput = [0, 0, 0]  # angle for 3 actuators
 
-    def setInterpolationNumber(self, number):
+    def setInterpolationNumber(self, number: int) -> bool:
 
         self.ActuatorsMovements.setInterpolationNumber(number)
         for leg in range(4):
@@ -168,25 +169,25 @@ class Movements:
         self.SpeedMovements.setInterpolationNumber(number)
         return True
 
-    def setExitstate(self, state):
+    def setExitstate(self, state: str) -> bool:
 
         if state != "Stand":
             self.ExitToStand = False
         return True
 
-    def setSpeedSequence(self, sequence, cycle_type, cycle_index):
+    def setSpeedSequence(self, sequence, cycle_type: str, cycle_index: int):
 
         self.SpeedMovements.setSequencePoint(sequence)
         self.SpeedMovements.setCycleType(cycle_type, cycle_index)
         self.SpeedInit = sequence[0]
 
-    def setAttitudeSequence(self, sequence, cycle_type, cycle_index):
+    def setAttitudeSequence(self, sequence, cycle_type: str, cycle_index: int):
 
         self.AttitudeMovements.setSequencePoint(sequence)
         self.AttitudeMovements.setCycleType(cycle_type, cycle_index)
         self.AttitudeInit = sequence[0]
 
-    def setLegsSequence(self, sequence, cycle_type, cycle_index):
+    def setLegsSequence(self, sequence, cycle_type: str, cycle_index: int):
 
         for leg in range(4):
             self.LegsMovements[leg].setSequencePoint(sequence[leg])
@@ -197,7 +198,7 @@ class Movements:
             self.LegsLocationInit[1][leg] = sequence[leg][0][1]
             self.LegsLocationInit[2][leg] = sequence[leg][0][2]
 
-    def setActuatorsSequence(self, sequence, cycle_type, cycle_index):
+    def setActuatorsSequence(self, sequence, cycle_type: str, cycle_index: int):
 
         self.ActuatorsMovements.setSequencePoint(sequence)
         self.ActuatorsMovements.setCycleType(cycle_type, cycle_index)
@@ -220,33 +221,30 @@ class Movements:
         if self.ActuatorEnable == "ActuatorEnable":
             self.ActuatorsAngleOutput = self.ActuatorsMovements.getNewPoint()
 
-    def getSpeedOutput(self, state="Normal"):
+    def getSpeedOutput(self, state: str = "Normal") -> List[int]:
 
         if state == "Init":
             return self.SpeedInit
-        else:
-            return self.SpeedOutput
 
-    def getAttitudeOutput(self, state="Normal"):
+        return self.SpeedOutput
 
+    def getAttitudeOutput(self, state: str = "Normal"):
         if state == "Init":
             return self.AttitudeInit
-        else:
-            return self.AttitudeOutput
 
-    def getLegsLocationOutput(self, state="Normal"):
+        return self.AttitudeOutput
 
+    def getLegsLocationOutput(self, state: str = "Normal"):
         if state == "Init":
             return self.LegsLocationInit
-        else:
-            return self.LegsLocationOutput
 
-    def getActuatorsAngleOutput(self, state="Normal"):
+        return self.LegsLocationOutput
 
+    def getActuatorsAngleOutput(self, state: str = "Normal"):
         if state == "Init":
             return self.ActuatorsAngleInit
-        else:
-            return self.ActuatorsAngleOutput
+
+        return self.ActuatorsAngleOutput
 
     def getMovementName(self):
 
@@ -329,7 +327,7 @@ class MovementScheme:
             self.legs_location_pre = self.legs_location_now
 
         if self.ststus == "Exit":
-            if self.movements_pre.ExitToStand == False:
+            if self.movements_pre.ExitToStand is False:
                 self.legs_location_now, self.exit_down = self.updateMovementGradient(
                     self.location_pre, LocationStanding
                 )
@@ -395,14 +393,14 @@ class MovementScheme:
         self.actuators_now = self.movements_now.getActuatorsAngleOutput("normal")
 
         # attitude process
-        """
-        for rpy in range(3):
-            #limite attitude angle
-            if attitude_now[rpy] < AttitudeMinMax[rpy][0]:
-                attitude_now[rpy] = AttitudeMinMax[rpy][0]
-            elif attitude_now[rpy] > AttitudeMinMax[rpy][1]:
-                attitude_now[rpy] = AttitudeMinMax[rpy][1]
-        """
+
+        # for rpy in range(3):
+        #     #limite attitude angle
+        #     if attitude_now[rpy] < AttitudeMinMax[rpy][0]:
+        #         attitude_now[rpy] = AttitudeMinMax[rpy][0]
+        #     elif attitude_now[rpy] > AttitudeMinMax[rpy][1]:
+        #         attitude_now[rpy] = AttitudeMinMax[rpy][1]
+
         # speed process
 
         return True
@@ -411,7 +409,7 @@ class MovementScheme:
 
         # update movement
         movement_name = ""
-        if transition == True:
+        if transition is True:
             movement_name = self.updateMovementType()
 
         self.updateMovement(movement_name)
