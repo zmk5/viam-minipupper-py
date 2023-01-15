@@ -1,5 +1,6 @@
 from MangDang.mini_pupper.Config import Configuration
 
+
 class GaitController:
     def __init__(self, config: Configuration):
         self.config = config

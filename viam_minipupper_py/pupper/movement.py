@@ -1,14 +1,14 @@
 from typing import List
 from viam_minipupper_py.pupper.control.actuator import ActuatorControl
 
-LocationStanding = [
+
+ATTITUDE_MIN_MAX = [[-20, 20], [-20, 20], [-100, 100]]
+DELT_LOCATION_MAX = 0.001
+LOCATION_STANDING = [
     [0.06, 0.06, -0.06, -0.06],
     [-0.05, 0.05, -0.05, 0.05],
     [-0.07, -0.07, -0.07, -0.07],
 ]
-DeltLocationMax = 0.001
-
-AttitudeMinMax = [[-20, 20], [-20, 20], [-100, 100]]
 
 
 class SequenceInterpolation:
@@ -266,8 +266,8 @@ class MovementScheme:
         self.exit_down = False
         self.tick = 0
 
-        self.legs_location_pre = LocationStanding
-        self.legs_location_now = LocationStanding
+        self.legs_location_pre = LOCATION_STANDING
+        self.legs_location_now = LOCATION_STANDING
 
         self.attitude_pre = [0, 0, 0]
         self.attitude_now = [0, 0, 0]
@@ -329,7 +329,7 @@ class MovementScheme:
         if self.ststus == "Exit":
             if self.movements_pre.ExitToStand is False:
                 self.legs_location_now, self.exit_down = self.updateMovementGradient(
-                    self.location_pre, LocationStanding
+                    self.location_pre, LOCATION_STANDING
                 )
                 self.legs_location_pre = self.legs_location_now
             else:
@@ -358,13 +358,13 @@ class MovementScheme:
                     location_now[xyz_index][leg_index]
                     - location_target[xyz_index][leg_index]
                 )
-                if diff > DeltLocationMax:
+                if diff > DELT_LOCATION_MAX:
                     loaction_gradient[xyz_index][leg_index] = (
-                        location_now[xyz_index][leg_index] - DeltLocationMax
+                        location_now[xyz_index][leg_index] - DELT_LOCATION_MAX
                     )
-                elif diff < -DeltLocationMax:
+                elif diff < -DELT_LOCATION_MAX:
                     loaction_gradient[xyz_index][leg_index] = (
-                        location_now[xyz_index][leg_index] + DeltLocationMax
+                        location_now[xyz_index][leg_index] + DELT_LOCATION_MAX
                     )
                 else:
                     loaction_gradient[xyz_index][leg_index] = location_target[
@@ -396,10 +396,10 @@ class MovementScheme:
 
         # for rpy in range(3):
         #     #limite attitude angle
-        #     if attitude_now[rpy] < AttitudeMinMax[rpy][0]:
-        #         attitude_now[rpy] = AttitudeMinMax[rpy][0]
-        #     elif attitude_now[rpy] > AttitudeMinMax[rpy][1]:
-        #         attitude_now[rpy] = AttitudeMinMax[rpy][1]
+        #     if attitude_now[rpy] < ATTITUDE_MIN_MAX[rpy][0]:
+        #         attitude_now[rpy] = ATTITUDE_MIN_MAX[rpy][0]
+        #     elif attitude_now[rpy] > ATTITUDE_MIN_MAX[rpy][1]:
+        #         attitude_now[rpy] = ATTITUDE_MIN_MAX[rpy][1]
 
         # speed process
 

@@ -20,6 +20,8 @@ RUN python3 -m pip install -U pip && \
     python3 -m pip install \
         black \
         numpy \
+        pylint \
+        pytest \
         rich \
         scipy \
         viam-sdk

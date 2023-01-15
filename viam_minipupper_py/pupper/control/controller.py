@@ -5,6 +5,7 @@ import numpy as np
 # from transforms3d.axangles import axangle2mat
 from transforms3d.euler import euler2mat
 from transforms3d.euler import quat2euler
+
 # from transforms3d.quaternions import qconjugate
 # from transforms3d.quaternions import quat2axangle
 
@@ -14,6 +15,7 @@ from viam_minipupper_py.pupper.control.gait import GaitController
 from viam_minipupper_py.pupper.control.stance import StanceController
 from viam_minipupper_py.pupper.control.swing import SwingController
 from viam_minipupper_py.pupper.state import BehaviorState
+
 # from viam_minipupper_py.pupper.state import State
 from viam_minipupper_py.pupper.utils import clipped_first_order_filter
 
