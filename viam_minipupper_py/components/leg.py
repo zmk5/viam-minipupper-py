@@ -1,4 +1,4 @@
-"""HERA Arm Viam Component."""
+"""Minipupper Leg Viam Component."""
 import asyncio
 from typing import Any
 from typing import Dict
@@ -10,21 +10,18 @@ from viam.proto.common import Pose
 from viam.proto.common import WorldState
 from viam.proto.component.arm import JointPositions
 
+from MangDang.mini_pupper.Config import PWMParams
+from MangDang.mini_pupper.Config import ServoParams
+from MangDang.mini_pupper.HardwareInterface import send_servo_command
+
 
 class PupperLeg(Arm):
     """Hera arm Viam subclassed component."""
 
-    def __init__(self, name: str):
-        # Starting position
-        self.position = Pose(
-            x=0,
-            y=0,
-            z=0,
-            o_x=0,
-            o_y=0,
-            o_z=0,
-            theta=0,
-        )
+    def __init__(self, name: str, leg_idx: int):
+        self.pwm_params = PWMParams()
+        self.servo_params = ServoParams()
+        self.leg_idx = leg_idx
 
         # Starting joint positions
         self.joint_positions = JointPositions(values=[0, 0, 0, 0, 0, 0])
@@ -32,33 +29,38 @@ class PupperLeg(Arm):
         super().__init__(name)
 
     async def get_end_position(
-        self, extra: Optional[Dict[str, Any]] = None, **kwargs
+        self,
+        *,
+        extra: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
+        **kwargs,
     ) -> Pose:
-        return self.position
+        """
+        Get the current position of the end of the arm expressed as a Pose.
 
-    @run_with_operation
+        Returns: The location and orientation of the arm described as a Pose.
+        """
+        ...
+
     async def move_to_position(
         self,
         pose: Pose,
         world_state: Optional[WorldState] = None,
+        *,
         extra: Optional[Dict[str, Any]] = None,
+        timeout: Optional[float] = None,
         **kwargs,
     ):
-        operation = self.get_operation(kwargs)
+        """
+        Move the end of the arm to the Pose specified in ``pose``.
+        When obstacles are specified in ``world_state``, the motion plan of the arm will avoid them.
 
-        self.is_stopped = False
-        self.position = pose
+        Args:
 
-        # Simulate the length of time it takes for the arm to move to its new position
-        for x in range(10):
-            await asyncio.sleep(1)
+            pose (Pose): The destination Pose for the arm.
 
-            # Check if the operation is cancelled and, if it is, stop the arm's motion
-            if await operation.is_cancelled():
-                await self.stop()
-                break
-
-        self.is_stopped = True
+            world_state (WorldState): The obstacles for the arm to avoid on its way to ``pose``.
+        """
 
     async def get_joint_positions(
         self, extra: Optional[Dict[str, Any]] = None, **kwargs
@@ -77,14 +79,17 @@ class PupperLeg(Arm):
         self.is_stopped = False
         self.joint_positions = positions
 
-        # Simulate the length of time it takes for the arm to move to its new joint position
-        for x in range(10):
-            await asyncio.sleep(1)
+        for axis_idx in range(3):
+            send_servo_command(
+                self.pwm_params,
+                self.servo_params,
+                self.joint_positions.values[0:3],
+                axis_idx,
+                self.leg_idx,
+            )
 
-            # Check if the operation is cancelled and, if it is, stop the arm's motion
-            if await operation.is_cancelled():
-                await self.stop()
-                break
+        if await operation.is_cancelled():
+            await self.stop()
 
         self.is_stopped = True
 

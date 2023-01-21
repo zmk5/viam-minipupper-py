@@ -15,8 +15,7 @@ from viam_minipupper_py.pupper.control.gait import GaitController
 from viam_minipupper_py.pupper.control.stance import StanceController
 from viam_minipupper_py.pupper.control.swing import SwingController
 from viam_minipupper_py.pupper.state import BehaviorState
-
-# from viam_minipupper_py.pupper.state import State
+from viam_minipupper_py.pupper.state import State
 from viam_minipupper_py.pupper.utils import clipped_first_order_filter
 
 
@@ -107,15 +106,16 @@ class Controller:
             new_foot_locations[:, leg_index] = new_location
         return new_foot_locations, contact_modes
 
-    def run(self, state, command, location, attitude, robot_speed):
+    def run(self, state: State, command, location, attitude, robot_speed):
         """Steps the controller forward one timestep
+
         Parameters
         ----------
         controller : Controller
             Robot controller object.
         """
 
-        ########## Update operating state based on command ######
+        # Update operating state based on command ######
         if command.activate_event:
             state.behavior_state = self.activate_transition_mapping[
                 state.behavior_state
@@ -182,8 +182,7 @@ class Controller:
             # Set the foot locations to the default stance plus the standard height
             print(f"act: {self.dance_active_state}")
             # self.dance_active_state = True
-            if self.dance_active_state == False:
-
+            if self.dance_active_state is False:
                 state.foot_locations = (
                     self.config.default_stance
                     + np.array([0, 0, command.height])[:, np.newaxis]
@@ -199,7 +198,6 @@ class Controller:
                 )
 
             else:
-
                 location_buf = np.zeros((3, 4))
                 for index_i in range(3):
                     for index_j in range(4):
@@ -245,7 +243,8 @@ class Controller:
         state.roll = command.roll
         state.height = command.height
 
-    def set_pose_to_default(self):
+    def set_pose_to_default(self, state: State, controller: Callable):
+        """Set the pose state to default values."""
         state.foot_locations = (
             self.config.default_stance
             + np.array([0, 0, self.config.default_z_ref])[:, np.newaxis]

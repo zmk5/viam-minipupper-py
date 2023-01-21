@@ -1,6 +1,3 @@
-from typing import List
-from typing import Union
-
 import numpy as np
 
 from MangDang.mini_pupper.Config import Configuration
@@ -26,7 +23,7 @@ def leg_explicit_inverse_kinematics(
     numpy array (3)
         Array of corresponding joint angles.
     """
-    (x, y, z) = r_body_foot
+    x, y, z = r_body_foot
 
     # Distance from the leg origin to the foot, projected into the y-z plane
     R_body_foot_yz = np.power(np.square(y) + np.square(z), 0.5)

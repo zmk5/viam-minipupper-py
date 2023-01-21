@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 import time
 
 import numpy as np
@@ -10,26 +11,23 @@ from viam_minipupper_py.pupper.utils import clipped_first_order_filter
 from viam_minipupper_py.pupper.utils import deadband
 
 
+@dataclass
 class Command:
-    """Stores movement command"""
+    """Store movement commands."""
+    horizontal_velocity: np.ndarray = np.array([0, 0])
+    yaw_rate: float = 0.0
+    height: float = -0.07
+    pitch: float = 0.0
+    roll: float = 0.0
+    activation: int = 0
 
-    def __init__(self):
-        self.horizontal_velocity = np.array([0, 0])
-        self.yaw_rate = 0.0
-        self.height = -0.07
-        self.pitch = 0.0
-        self.roll = 0.0
-        self.activation = 0
-
-        self.hop_event = False
-        self.trot_event = False
-        self.activate_event = False
-        self.dance_activate_event = False
-
-        self.dance_switch_event = False
-        self.gait_switch_event = False
-
-        self.shutdown_signal = False
+    hop_event: bool = False
+    trot_event: bool = False
+    activate_event: bool = False
+    dance_activate_event: bool = False
+    dance_switch_event: bool = False
+    gait_switch_event: bool = False
+    shutdown_signal: bool = False
 
 
 class JoystickInterface:

@@ -6,21 +6,20 @@ import sys
 
 from viam.rpc.server import Server
 
-from viam.components.camera import Camera
-from viam.components.sensor import Sensor
+# from viam.components.camera import Camera
+# from viam.components.sensor import Sensor
 from viam.components.input import Controller
-from viam.components.pose_tracker import PoseTracker
+# from viam.components.pose_tracker import PoseTracker
 
 from viam_minipupper_py.components.leg import PupperLeg
 
 
 async def run(host: str, port: int, log_level: int):
     """Run MiniPupper component server."""
-    front_right_leg = PupperLeg("frl")
-    front_left_leg = PupperLeg("fll")
-    hind_right_leg = PupperLeg("hrl")
-    hind_left_leg = PupperLeg("hll")
-    joystick = Controller("joystick")
+    front_right_leg = PupperLeg("frl", 0)
+    front_left_leg = PupperLeg("fll", 1)
+    hind_right_leg = PupperLeg("hrl", 2)
+    hind_left_leg = PupperLeg("hll", 3)
 
     server = Server(
         components=[
@@ -28,7 +27,7 @@ async def run(host: str, port: int, log_level: int):
             front_left_leg,
             hind_right_leg,
             hind_left_leg,
-            joystick,
+            # joystick,
         ]
     )
     await server.serve(host=host, port=port, log_level=log_level)
