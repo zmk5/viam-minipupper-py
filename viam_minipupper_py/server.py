@@ -36,6 +36,7 @@ async def run(host: str, port: int, log_level: int):
 def main():
     host = "localhost"
     port = 9090
+    # port = 8080
     log_level = logging.DEBUG
     try:
         host = sys.argv[1]

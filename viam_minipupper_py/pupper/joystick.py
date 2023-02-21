@@ -30,6 +30,17 @@ class Command:
     shutdown_signal: bool = False
 
 
+@dataclass
+class Toggles:
+
+    gait_toggle: int = 0
+    hop_toggle: int = 0
+    activate_toggle: int = 0
+    dance_activate_toggle: int = 0
+    dance_swith_toggle: int = 0
+    gait_switch_toggle: int = 0
+
+
 class JoystickInterface:
     def __init__(
         self,

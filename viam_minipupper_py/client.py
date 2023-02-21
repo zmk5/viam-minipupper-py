@@ -32,9 +32,10 @@ from viam.proto.component.arm import JointPositions
 from MangDang.mini_pupper.HardwareInterface import HardwareInterface
 from MangDang.mini_pupper.Config import Configuration
 
+from viam_minipupper_py.components.joystick import Joystick
 from viam_minipupper_py.components.leg import PupperLeg
 from viam_minipupper_py.pupper.control.controller import Controller
-from viam_minipupper_py.pupper.joystick import JoystickInterface
+# from viam_minipupper_py.pupper.joystick import JoystickInterface
 from viam_minipupper_py.pupper.kinematics import four_legs_inverse_kinematics
 from viam_minipupper_py.pupper.movement import MovementScheme
 from viam_minipupper_py.pupper.state import State
@@ -127,7 +128,7 @@ async def client():
     async with await RobotClient.at_address("localhost:9090", opts) as robot:
         # Create empty configuration
         config = Configuration()
-        hardware_interface = HardwareInterface()
+        # hardware_interface = HardwareInterface()
 
         legs = {
             0: PupperLeg.from_robot(robot, "frl"),
@@ -168,7 +169,10 @@ async def client():
         )
         state = State()
         print("Creating joystick listener...")
-        joystick_interface = JoystickInterface(config)
+        # joystick_interface = JoystickInterface(config)
+        ps4_controller = Controller.from_robot(robot, 'wheel')
+        joystick_interface = Joystick()
+        await joystick_interface.handleController(ps4_controller)
         print("Done.")
 
         last_loop = time.time()
@@ -190,7 +194,7 @@ async def client():
                 time.sleep(0.1)
             print("Robot activated.")
             is_connect.value = 1
-            joystick_interface.set_color(config.ps4_color)
+            # joystick_interface.set_color(config.ps4_color)
             # pic_show(DISP, "walk.png", lock)
 
             while True:

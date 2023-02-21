@@ -1,92 +1,217 @@
 """Minipupper Joystick Controller Viam Component."""
 import asyncio
-from dataclasses import dataclass
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
+import functools
 
 import numpy as np
 
+from viam.components.base import Base
 from viam.components.input import Control
 from viam.components.input import Controller
-from viam.components.input import ControlFunction
 from viam.components.input import Event
 from viam.components.input import EventType
+from viam.proto.common import Vector3
+
+from MangDang.mini_pupper.Config import Configuration
+
+from viam_minipupper_py.pupper.joystick import Command
+from viam_minipupper_py.pupper.joystick import Toggles
+from viam_minipupper_py.pupper.state import State
+from viam_minipupper_py.pupper.utils import deadband
+from viam_minipupper_py.pupper.utils import clipped_first_order_filter
 
 
-@dataclass
-class Command:
-    """Store movement commands."""
-    horizontal_velocity: np.ndarray = np.array([0, 0])
-    yaw_rate: float = 0.0
-    height: float = -0.07
-    pitch: float = 0.0
-    roll: float = 0.0
-    activation: int = 0
+class Joystick:
 
-    hop_event: bool = False
-    trot_event: bool = False
-    activate_event: bool = False
-    dance_activate_event: bool = False
-    dance_switch_event: bool = False
-    gait_switch_event: bool = False
-    shutdown_signal: bool = False
+    def __init__(self):
+        self.command = Command()
+        self.config = Configuration()
+        self.previous = Toggles()
+        self.saved = {
+            "x": 0.0,
+            "y": 0.0,
+            "yaw": 0.0,
+            "pitch": 0.0,
+            "height": 0.0,
+        }
 
+    def toggle_gait(self, event: Event):
+        if event.value == 1 and self.previous.gait_toggle == 0:
+            self.command.trot_event = 1
+        else:
+            self.command.trot_event = 0
 
-class PupperJoystickController(Controller):
-    """PS3 Joystick Controller component for Minipupper."""
+        self.previous.gait_toggle = self.command.trot_event
 
-    def __init__(self, name: str):
-        super().__init__(name)
-        self.horizontal_velocity = np.array([0, 0])
+    def toggle_hop(self, event: Event):
+        if event.value == 1 and self.previous.hop_toggle == 0:
+            self.command.hop_event = 1
+        else:
+            self.command.hop_event = 0
 
+        self.previous.hop_toggle = self.command.hop_event
 
-    async def get_controls(self, *, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None, **kwargs) -> List[Control]:
-        """
-        Returns a list of Controls provided by the Controller
+    def toggle_dance_switch(self, event: Event):
+        if event.value == 1 and self.previous.dance_swith_toggle != 1:
+            self.command.dance_switch_event = 1
+        else:
+            self.command.dance_switch_event = 0
 
-        Returns:
-            List[Control]: List of controls provided by the Controller
-        """
+        self.previous.dance_swith_toggle = self.command.dance_switch_event
 
-    async def get_events(
-        self, *, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None, **kwargs
-    ) -> Dict[Control, Event]:
-        """
-        Returns the most recent Event for each input
-        (which should be the current state)
+    def toggle_gait_switch(self, event: Event):
+        if event.value == 1 and self.previous.gait_switch_toggle == 0:
+            self.command.gait_switch_event = 1
+        else:
+            self.command.gait_switch_event = 0
 
-        Returns:
-            Dict[Control, Event]: The most recent event for each input
-        """
+        self.previous.gait_switch_toggle = self.command.gait_switch_event
 
-    def register_control_callback(
-        self,
-        control: Control,
-        triggers: List[EventType],
-        function: Optional[ControlFunction],
-        *,
-        extra: Optional[Dict[str, Any]] = None,
-        **kwargs,
-    ):
-        """
-        Register a function that will fire on given EventTypes for a given
-        Control
+    def toggle_dance(self, event: Event):
+        if event.value == 1 and self.previous.dance_activate_toggle == 0:
+            self.command.dance_activate_event = 1
+        else:
+            self.command.dance_activate_event = 0
 
-        Args:
-            control (Control): The control to register the function for
-            triggers (List[EventType]): The events that will
-                trigger the function
-            function (ControlFunction): The function to run on
-                specific triggers
-        """
+        self.previous.dance_activate_toggle = self.command.dance_activate_event
 
+    def toggle_activate(self, event: Event):
+        if event.value == 1 and self.previous.activate_toggle == 0:
+            self.command.activate_event = 1
+        else:
+            self.command.activate_event = 0
 
-    async def trigger_event(self, event: Event, *, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None, **kwargs):
-        """Directly send an Event (such as a button press) from external code
+        self.previous.activate_toggle = self.command.activate_event
 
-        Args:
-            event (Event): The event to trigger
-        """
+    def toggle_shutdown(self, event: Event):
+        self.command.shutdown_signal = event.value
 
+    def change_x(self, event: Event):
+        self.saved["x"] = event.value
+
+    def change_y(self, event: Event):
+        self.saved["y"] = event.value
+
+    def change_roll(self, event: Event):
+        self.saved["roll"] = -1 * event.value
+
+    def change_pitch(self, event: Event):
+        self.saved["pitch"] = event.value
+
+    def change_yaw(self, event: Event):
+        self.saved["yaw"] = event.value
+
+    def change_height(self, event: Event):
+        self.saved["height"] = event.value
+
+    async def handleController(self, controller: Controller):
+        resp = await controller.get_events()
+        # Show the input controller's buttons/axes
+        print(f'Controls:\n{resp}')
+
+        if Control.BUTTON_RT in resp:
+            controller.register_control_callback(
+                Control.BUTTON_RT,
+                [EventType.BUTTON_PRESS],
+                functools.partial(self.toggle_gait, self),
+            )
+
+        if Control.BUTTON_RT2 in resp:
+            controller.register_control_callback(
+                Control.BUTTON_RT2,
+                [EventType.BUTTON_PRESS],
+                functools.partial(self.toggle_gait_switch, self),
+            )
+
+        if Control.BUTTON_LT in resp:
+            controller.register_control_callback(
+                Control.BUTTON_LT,
+                [EventType.BUTTON_PRESS],
+                functools.partial(self.toggle_activate, self),
+            )
+
+        if Control.BUTTON_LT2 in resp:
+            controller.register_control_callback(
+                Control.BUTTON_LT2,
+                [EventType.BUTTON_PRESS],
+                functools.partial(self.toggle_dance_switch, self),
+            )
+
+        if Control.BUTTON_NORTH in resp:
+            controller.register_control_callback(
+                Control.BUTTON_NORTH,
+                [EventType.BUTTON_PRESS],
+                functools.partial(self.toggle_shutdown, self),
+            )
+
+        if Control.BUTTON_EAST in resp:
+            controller.register_control_callback(
+                Control.BUTTON_EAST,
+                [EventType.BUTTON_PRESS],
+                functools.partial(self.toggle_dance, self),
+            )
+
+        if Control.ABSOLUTE_X in resp:
+            controller.register_control_callback(
+                Control.ABSOLUTE_X,
+                [EventType.POSITION_CHANGE_ABSOLUTE],
+                functools.partial(self.change_x, self),
+            )
+
+        if Control.ABSOLUTE_Y in resp:
+            controller.register_control_callback(
+                Control.ABSOLUTE_Y,
+                [EventType.POSITION_CHANGE_ABSOLUTE],
+                functools.partial(self.change_y, self),
+            )
+
+        if Control.ABSOLUTE_RX in resp:
+            controller.register_control_callback(
+                Control.ABSOLUTE_X,
+                [EventType.POSITION_CHANGE_ABSOLUTE],
+                functools.partial(self.change_yaw, self),
+            )
+
+        if Control.ABSOLUTE_RY in resp:
+            controller.register_control_callback(
+                Control.ABSOLUTE_Y,
+                [EventType.POSITION_CHANGE_ABSOLUTE],
+                functools.partial(self.change_pitch, self),
+            )
+
+        # TODO: No D-Pad buttons for roll and height
+
+        while True:
+            await asyncio.sleep(0.01)
+            # global cmd
+            # if "y" in cmd:
+            #     respon = await modal.set_power(linear=Vector3(x=0,y=cmd["y"],z=0), angular=Vector3(x=0,y=0,z=turn_amt))
+            #     cmd = {}
+            #     print(respon)
+
+    def get_command(self, state: State, dt: float = 0.1) -> Command:
+        """Get command based on inputs from device."""
+        self.command.horizontal_velocity = np.array([
+            self.saved["y"] * self.config.max_x_velocity,
+            self.saved["x"] * -self.config.max_y_velocity,
+        ])
+        self.command.yaw_rate = self.saved["yaw"] * -self.config.max_yaw_rate
+
+        pitch = self.saved["pitch"] * self.config.max_pitch
+        deadbanded_pitch = deadband(pitch, self.config.pitch_deadband)
+        pitch_rate = clipped_first_order_filter(
+            state.pitch,
+            deadbanded_pitch,
+            self.config.max_pitch_rate,
+            self.config.pitch_time_constant,
+        )
+        self.command.pitch = state.pitch + dt * pitch_rate
+
+        # self.command.height = (
+        #     state.height - dt * self.config.z_speed * self.saved["height"]
+        # )
+
+        # self.command.roll = (
+        #     state.roll + dt * self.config.roll_speed * self.saved["roll"]
+        # )
+
+        return self.command
