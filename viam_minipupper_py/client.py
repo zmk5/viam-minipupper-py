@@ -4,6 +4,7 @@ from multiprocessing import Process
 import multiprocessing
 import os
 import sys
+
 # import threading
 import time
 
@@ -37,7 +38,6 @@ from MangDang.mini_pupper.Config import Configuration
 from viam_minipupper_py.components.joystick import Joystick
 from viam_minipupper_py.components.leg import PupperLeg
 from viam_minipupper_py.pupper.control.controller import Controller
-# from viam_minipupper_py.pupper.joystick import JoystickInterface
 from viam_minipupper_py.pupper.kinematics import four_legs_inverse_kinematics
 from viam_minipupper_py.pupper.movement import appendDanceMovement
 from viam_minipupper_py.pupper.movement import MovementScheme
@@ -217,10 +217,9 @@ async def client():
             print("HI")
             now = time.time()
             if now - last_loop < config.dt:
-                print("UH OH")
                 continue
             last_loop = time.time()
-            print("MY NAME IS")
+
             # Parse the udp joystick commands and then update the robot controller's parameters
             await joystick_interface.handleController(ps4_controller)
             command = joystick_interface.get_command(state)
@@ -229,20 +228,20 @@ async def client():
             # if command.trot_event == True:
             #     _pic = "walk_r1.png"
             # pic_show(DISP, _pic, lock)
-            print("WHAT")
+
             if command.activate_event == 0:
                 is_connect.value = 0
                 # pic_show(DISP, "notconnect.png", lock)
                 print("Deactivating Robot")
                 break
-            print("HE HE HE 0")
+
             state.quat_orientation = QUAT_ORIENTATION
             # movement scheme
             movement_switch = command.dance_switch_event
             gait_state = command.trot_event
             dance_state = command.dance_activate_event
             shutdown_signal = command.shutdown_signal
-            print("HE HE HE 1")
+
             # shutdown counter
             if shutdown_signal:
                 shutdown_counter += 1
@@ -251,7 +250,7 @@ async def client():
                     print("shutdown system now")
                     os.system("systemctl stop robot")
                     os.system("shutdown -h now")
-            print("HE HE HE 2")
+
             # gait and movement control
             # if triger tort event, reset the movement number to 0
             if gait_state or dance_state:
@@ -263,7 +262,6 @@ async def client():
             controller.run(
                 state, command, food_location, attitude_location, robot_speed
             )
-            print("HE HE HE 3")
             for i in range(4):
                 # Convert state joint angles to joint positions
                 thigh = state.joint_angles[0, i]
@@ -273,8 +271,6 @@ async def client():
                 await legs[i].move_to_joint_positions(
                     JointPositions(values=[thigh, hip, calf, 0, 0, 0])
                 )
-                print("HE HE HE 3.9")
-            print("HE HE HE 4")
 
             # Update the pwm widths going to the servos
             # hardware_interface.set_actuator_postions(state.joint_angles)

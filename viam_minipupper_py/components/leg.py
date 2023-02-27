@@ -74,12 +74,11 @@ class PupperLeg(Arm):
         extra: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
-        print("IN LEG HERE 0")
         operation = self.get_operation(kwargs)
 
         self.is_stopped = False
         self.joint_positions = positions
-        print("IN LEG HERE 1")
+
         for axis_idx in range(3):
             send_servo_command(
                 self.pwm_params,
@@ -89,10 +88,10 @@ class PupperLeg(Arm):
                 axis_idx,
                 self.leg_idx,
             )
-        print("IN LEG HERE 2")
+
         if await operation.is_cancelled():
             await self.stop()
-        print("IN LEG HERE 3")
+
         self.is_stopped = True
 
     async def stop(self, extra: Optional[Dict[str, Any]] = None, **kwargs):

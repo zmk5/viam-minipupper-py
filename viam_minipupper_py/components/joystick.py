@@ -4,12 +4,10 @@ import functools
 
 import numpy as np
 
-from viam.components.base import Base
 from viam.components.input import Control
 from viam.components.input import Controller
 from viam.components.input import Event
 from viam.components.input import EventType
-from viam.proto.common import Vector3
 
 from MangDang.mini_pupper.Config import Configuration
 
@@ -21,7 +19,6 @@ from viam_minipupper_py.pupper.utils import clipped_first_order_filter
 
 
 class Joystick:
-
     def __init__(self):
         self.command = Command()
         self.config = Configuration()
@@ -114,7 +111,7 @@ class Joystick:
         if Control.BUTTON_RT in resp:
             controller.register_control_callback(
                 Control.BUTTON_RT,
-                [EventType.BUTTON_PRESS, EventType.BUTTON_RELEASE],
+                [EventType.BUTTON_PRESS],
                 # functools.partial(self.toggle_gait, self),
                 self.toggle_gait,
             )
@@ -122,7 +119,7 @@ class Joystick:
         if Control.BUTTON_RT2 in resp:
             controller.register_control_callback(
                 Control.BUTTON_RT2,
-                [EventType.BUTTON_PRESS, EventType.BUTTON_RELEASE],
+                [EventType.BUTTON_PRESS],
                 # functools.partial(self.toggle_gait_switch, self),
                 self.toggle_gait_switch,
             )
@@ -188,25 +185,27 @@ class Joystick:
                 Control.ABSOLUTE_Y,
                 [EventType.POSITION_CHANGE_ABSOLUTE],
                 # functools.partial(self.change_pitch, self),
-                self.change_pitch
+                self.change_pitch,
             )
 
         # TODO: No D-Pad buttons for roll and height
 
         # while True:
         #     await asyncio.sleep(0.01)
-            # global cmd
-            # if "y" in cmd:
-            #     respon = await modal.set_power(linear=Vector3(x=0,y=cmd["y"],z=0), angular=Vector3(x=0,y=0,z=turn_amt))
-            #     cmd = {}
-            #     print(respon)
+        # global cmd
+        # if "y" in cmd:
+        #     respon = await modal.set_power(linear=Vector3(x=0,y=cmd["y"],z=0), angular=Vector3(x=0,y=0,z=turn_amt))
+        #     cmd = {}
+        #     print(respon)
 
     def get_command(self, state: State, dt: float = 0.1) -> Command:
         """Get command based on inputs from device."""
-        self.command.horizontal_velocity = np.array([
-            self.saved["y"] * self.config.max_x_velocity,
-            self.saved["x"] * -self.config.max_y_velocity,
-        ])
+        self.command.horizontal_velocity = np.array(
+            [
+                self.saved["y"] * self.config.max_x_velocity,
+                self.saved["x"] * -self.config.max_y_velocity,
+            ]
+        )
         self.command.yaw_rate = self.saved["yaw"] * -self.config.max_yaw_rate
 
         pitch = self.saved["pitch"] * self.config.max_pitch

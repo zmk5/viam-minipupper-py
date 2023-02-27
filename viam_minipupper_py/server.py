@@ -9,6 +9,7 @@ from viam.rpc.server import Server
 # from viam.components.camera import Camera
 # from viam.components.sensor import Sensor
 from viam.components.input import Controller
+
 # from viam.components.pose_tracker import PoseTracker
 
 from viam_minipupper_py.components.leg import PupperLeg
