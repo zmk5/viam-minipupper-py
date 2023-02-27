@@ -31,6 +31,7 @@ async def run(host: str, port: int, log_level: int):
         ]
     )
     await server.serve(host=host, port=port, log_level=log_level)
+    # await server.serve()
 
 
 def main():

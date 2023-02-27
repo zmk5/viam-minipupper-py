@@ -59,6 +59,7 @@ class Joystick:
         self.previous.dance_swith_toggle = self.command.dance_switch_event
 
     def toggle_gait_switch(self, event: Event):
+        print("HERE")
         if event.value == 1 and self.previous.gait_switch_toggle == 0:
             self.command.gait_switch_event = 1
         else:
@@ -76,8 +77,10 @@ class Joystick:
 
     def toggle_activate(self, event: Event):
         if event.value == 1 and self.previous.activate_toggle == 0:
+            print("ACTIVATING --------------")
             self.command.activate_event = 1
         else:
+            print("DEACTIVATING ------------")
             self.command.activate_event = 0
 
         self.previous.activate_toggle = self.command.activate_event
@@ -106,82 +109,92 @@ class Joystick:
     async def handleController(self, controller: Controller):
         resp = await controller.get_events()
         # Show the input controller's buttons/axes
-        print(f'Controls:\n{resp}')
+        # print(f"Controls: {resp}")
 
         if Control.BUTTON_RT in resp:
             controller.register_control_callback(
                 Control.BUTTON_RT,
-                [EventType.BUTTON_PRESS],
-                functools.partial(self.toggle_gait, self),
+                [EventType.BUTTON_PRESS, EventType.BUTTON_RELEASE],
+                # functools.partial(self.toggle_gait, self),
+                self.toggle_gait,
             )
 
         if Control.BUTTON_RT2 in resp:
             controller.register_control_callback(
                 Control.BUTTON_RT2,
-                [EventType.BUTTON_PRESS],
-                functools.partial(self.toggle_gait_switch, self),
+                [EventType.BUTTON_PRESS, EventType.BUTTON_RELEASE],
+                # functools.partial(self.toggle_gait_switch, self),
+                self.toggle_gait_switch,
             )
 
         if Control.BUTTON_LT in resp:
             controller.register_control_callback(
                 Control.BUTTON_LT,
                 [EventType.BUTTON_PRESS],
-                functools.partial(self.toggle_activate, self),
+                # functools.partial(self.toggle_activate, self),
+                self.toggle_activate,
             )
 
         if Control.BUTTON_LT2 in resp:
             controller.register_control_callback(
                 Control.BUTTON_LT2,
                 [EventType.BUTTON_PRESS],
-                functools.partial(self.toggle_dance_switch, self),
+                # functools.partial(self.toggle_dance_switch, self),
+                self.toggle_dance_switch,
             )
 
         if Control.BUTTON_NORTH in resp:
             controller.register_control_callback(
                 Control.BUTTON_NORTH,
                 [EventType.BUTTON_PRESS],
-                functools.partial(self.toggle_shutdown, self),
+                # functools.partial(self.toggle_shutdown, self),
+                self.toggle_shutdown,
             )
 
         if Control.BUTTON_EAST in resp:
             controller.register_control_callback(
                 Control.BUTTON_EAST,
                 [EventType.BUTTON_PRESS],
-                functools.partial(self.toggle_dance, self),
+                # functools.partial(self.toggle_dance, self),
+                self.toggle_dance,
             )
 
         if Control.ABSOLUTE_X in resp:
             controller.register_control_callback(
                 Control.ABSOLUTE_X,
                 [EventType.POSITION_CHANGE_ABSOLUTE],
-                functools.partial(self.change_x, self),
+                # functools.partial(self.change_x, self),
+                self.change_x,
             )
 
         if Control.ABSOLUTE_Y in resp:
             controller.register_control_callback(
                 Control.ABSOLUTE_Y,
                 [EventType.POSITION_CHANGE_ABSOLUTE],
-                functools.partial(self.change_y, self),
+                # functools.partial(self.change_y, self),
+                self.change_y,
             )
 
         if Control.ABSOLUTE_RX in resp:
             controller.register_control_callback(
                 Control.ABSOLUTE_X,
                 [EventType.POSITION_CHANGE_ABSOLUTE],
-                functools.partial(self.change_yaw, self),
+                # functools.partial(self.change_yaw, self),
+                self.change_yaw,
             )
 
         if Control.ABSOLUTE_RY in resp:
             controller.register_control_callback(
                 Control.ABSOLUTE_Y,
                 [EventType.POSITION_CHANGE_ABSOLUTE],
-                functools.partial(self.change_pitch, self),
+                # functools.partial(self.change_pitch, self),
+                self.change_pitch
             )
 
         # TODO: No D-Pad buttons for roll and height
 
-        while True:
-            await asyncio.sleep(0.01)
+        # while True:
+        #     await asyncio.sleep(0.01)
             # global cmd
             # if "y" in cmd:
             #     respon = await modal.set_power(linear=Vector3(x=0,y=cmd["y"],z=0), angular=Vector3(x=0,y=0,z=turn_amt))

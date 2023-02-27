@@ -4,15 +4,16 @@ from multiprocessing import Process
 import multiprocessing
 import os
 import sys
-import threading
+# import threading
 import time
 
 import numpy as np
 
-from PIL import Image
+# from PIL import Image
 
 from rich import print
 
+from viam.components.input import Controller as ControllerViam
 from viam.robot.client import RobotClient
 from viam.rpc.dial import DialOptions
 
@@ -25,6 +26,7 @@ sys.path.extend(
     ]
 )
 
+from viam.robot.client import RobotClient
 from viam.proto.component.arm import JointPositions
 
 # from MangDang.LCD.ST7789 import ST7789
@@ -37,6 +39,7 @@ from viam_minipupper_py.components.leg import PupperLeg
 from viam_minipupper_py.pupper.control.controller import Controller
 # from viam_minipupper_py.pupper.joystick import JoystickInterface
 from viam_minipupper_py.pupper.kinematics import four_legs_inverse_kinematics
+from viam_minipupper_py.pupper.movement import appendDanceMovement
 from viam_minipupper_py.pupper.movement import MovementScheme
 from viam_minipupper_py.pupper.state import State
 
@@ -108,6 +111,18 @@ CURRENT_SHOW = ""
 #         pass
 
 
+async def connect_controller() -> RobotClient:
+    """Connect to Viam Server for controller."""
+    opts = RobotClient.Options(dial_options=DialOptions(insecure=True))
+    return await RobotClient.at_address("127.0.0.1:8080", opts)
+
+
+async def connect_minipupper() -> RobotClient:
+    """Connect to custom remote server for robot components."""
+    opts = RobotClient.Options(dial_options=DialOptions(insecure=True))
+    return await RobotClient.at_address("localhost:9090", opts)
+
+
 def cmd_dump(cmd: State):
     """Dump all info about PS4 command (DEBUG)."""
     print("\nGet PS4 command:")
@@ -124,140 +139,148 @@ def cmd_dump(cmd: State):
 
 async def client():
     """Connect to robot and initiate client."""
-    opts = RobotClient.Options(dial_options=DialOptions(insecure=True))
-    async with await RobotClient.at_address("localhost:9090", opts) as robot:
-        # Create empty configuration
-        config = Configuration()
-        # hardware_interface = HardwareInterface()
+    # Create empty configuration
+    config = Configuration()
 
-        legs = {
-            0: PupperLeg.from_robot(robot, "frl"),
-            1: PupperLeg.from_robot(robot, "fll"),
-            2: PupperLeg.from_robot(robot, "hrl"),
-            3: PupperLeg.from_robot(robot, "hll"),
-        }
+    # Get components from server
+    robot = await connect_minipupper()
+    legs = {
+        0: PupperLeg.from_robot(robot, "frl"),
+        1: PupperLeg.from_robot(robot, "fll"),
+        2: PupperLeg.from_robot(robot, "hrl"),
+        3: PupperLeg.from_robot(robot, "hll"),
+    }
 
-        # show logo
-        # global DISP
-        # DISP.begin()
-        # DISP.clear()
-        # image = Image.open(CARTOONS_FOLDER + "logo.png")
-        # image.resize((320, 240))
-        # DISP.display(image)
+    # show logo
+    # global DISP
+    # DISP.begin()
+    # DISP.clear()
+    # image = Image.open(CARTOONS_FOLDER + "logo.png")
+    # image.resize((320, 240))
+    # DISP.display(image)
 
-        shutdown_counter = 0  # counter for shuudown cmd
+    shutdown_counter = 0  # counter for shuudown cmd
 
-        # Start animated process
-        # duration = 10
-        is_connect = multiprocessing.Value("l", 0)
-        # current_leg = multiprocessing.Array("d", [0, 0, 0])
-        # lock = multiprocessing.Lock()
-        # animated_process = Process(
-        #     target=animated_thr_fun,
-        #     args=(DISP, duration, is_connect, current_leg, lock),
-        # )
-        # animated_process.start()
+    # Start animated process
+    # duration = 10
+    is_connect = multiprocessing.Value("l", 0)
+    # current_leg = multiprocessing.Array("d", [0, 0, 0])
+    # lock = multiprocessing.Lock()
+    # animated_process = Process(
+    #     target=animated_thr_fun,
+    #     args=(DISP, duration, is_connect, current_leg, lock),
+    # )
+    # animated_process.start()
 
-        # Create movement group scheme
-        MovementLib = []
-        movement_ctl = MovementScheme(MovementLib)
+    # Create movement group scheme
+    MovementLib = appendDanceMovement()
+    movement_ctl = MovementScheme(MovementLib)
 
-        # Create controller and user input handles
-        controller = Controller(
-            config,
-            four_legs_inverse_kinematics,
-        )
-        state = State()
-        print("Creating joystick listener...")
-        # joystick_interface = JoystickInterface(config)
-        ps4_controller = Controller.from_robot(robot, 'wheel')
-        joystick_interface = Joystick()
-        await joystick_interface.handleController(ps4_controller)
-        print("Done.")
+    # Create controller and user input handles
+    controller = Controller(
+        config,
+        four_legs_inverse_kinematics,
+    )
+    state = State()
+    print("Creating joystick listener...")
 
-        last_loop = time.time()
+    ps4_controller_obj = await connect_controller()
+    ps4_controller = ControllerViam.from_robot(ps4_controller_obj, "PS4 Controller")
+    joystick_interface = Joystick()
+    await joystick_interface.handleController(ps4_controller)
+    print("Done.")
 
-        print("Summary of gait parameters:")
-        print("overlap time: ", config.overlap_time)
-        print("swing time: ", config.swing_time)
-        print("z clearance: ", config.z_clearance)
-        print("x shift: ", config.x_shift)
+    last_loop = time.time()
 
-        # Wait until the activate button has been pressed
+    print("Summary of gait parameters:")
+    print("overlap time: ", config.overlap_time)
+    print("swing time: ", config.swing_time)
+    print("z clearance: ", config.z_clearance)
+    print("x shift: ", config.x_shift)
+
+    # Wait until the activate button has been pressed
+    while True:
+        print("Waiting for L1 to activate robot.")
         while True:
-            print("Waiting for L1 to activate robot.")
-            while True:
-                command = joystick_interface.get_command(state)
-                joystick_interface.set_color(config.ps4_deactivated_color)
-                if command.activate_event == 1:
-                    break
-                time.sleep(0.1)
-            print("Robot activated.")
-            is_connect.value = 1
-            # joystick_interface.set_color(config.ps4_color)
-            # pic_show(DISP, "walk.png", lock)
+            await joystick_interface.handleController(ps4_controller)
+            command = joystick_interface.get_command(state)
+            # joystick_interface.set_color(config.ps4_deactivated_color)
+            if command.activate_event == 1:
+                break
+            time.sleep(0.1)
+        print("Robot activated.")
+        is_connect.value = 1
+        # joystick_interface.set_color(config.ps4_color)
+        # pic_show(DISP, "walk.png", lock)
 
-            while True:
-                now = time.time()
-                if now - last_loop < config.dt:
-                    continue
-                last_loop = time.time()
-
-                # Parse the udp joystick commands and then update the robot controller's parameters
-                command = joystick_interface.get_command(state)
-                # cmd_dump(command)
-                # _pic = "walk.png" if command.yaw_rate == 0 else "turnaround.png"
-                # if command.trot_event == True:
-                #     _pic = "walk_r1.png"
-                # pic_show(DISP, _pic, lock)
-                if command.activate_event == 1:
-                    is_connect.value = 0
-                    # pic_show(DISP, "notconnect.png", lock)
-                    print("Deactivating Robot")
-                    break
-                state.quat_orientation = QUAT_ORIENTATION
-                # movement scheme
-                movement_switch = command.dance_switch_event
-                gait_state = command.trot_event
-                dance_state = command.dance_activate_event
-                shutdown_signal = command.shutdown_signal
-
-                # shutdown counter
-                if shutdown_signal is True:
-                    shutdown_counter = shutdown_counter + 1
-                    # press shut dow button more 3s(0.015*200), shut down system
-                    if shutdown_counter >= 200:
-                        print("shutdown system now")
-                        os.system("systemctl stop robot")
-                        os.system("shutdown -h now")
-
-                # gait and movement control
-                # if triger tort event, reset the movement number to 0
-                if (gait_state is True or dance_state is True):
-                    movement_ctl.resetMovementNumber()
-                movement_ctl.runMovementScheme(movement_switch)
-                food_location = movement_ctl.getMovemenLegsLocation()
-                attitude_location = movement_ctl.getMovemenAttitude()
-                robot_speed = movement_ctl.getMovemenSpeed()
-                controller.run(
-                    state, command, food_location, attitude_location, robot_speed
+        while True:
+            print("HI")
+            now = time.time()
+            if now - last_loop < config.dt:
+                print("UH OH")
+                continue
+            last_loop = time.time()
+            print("MY NAME IS")
+            # Parse the udp joystick commands and then update the robot controller's parameters
+            await joystick_interface.handleController(ps4_controller)
+            command = joystick_interface.get_command(state)
+            # cmd_dump(command)
+            # _pic = "walk.png" if command.yaw_rate == 0 else "turnaround.png"
+            # if command.trot_event == True:
+            #     _pic = "walk_r1.png"
+            # pic_show(DISP, _pic, lock)
+            print("WHAT")
+            if command.activate_event == 0:
+                is_connect.value = 0
+                # pic_show(DISP, "notconnect.png", lock)
+                print("Deactivating Robot")
+                break
+            print("HE HE HE 0")
+            state.quat_orientation = QUAT_ORIENTATION
+            # movement scheme
+            movement_switch = command.dance_switch_event
+            gait_state = command.trot_event
+            dance_state = command.dance_activate_event
+            shutdown_signal = command.shutdown_signal
+            print("HE HE HE 1")
+            # shutdown counter
+            if shutdown_signal:
+                shutdown_counter += 1
+                # press shut dow button more 3s(0.015*200), shut down system
+                if shutdown_counter >= 200:
+                    print("shutdown system now")
+                    os.system("systemctl stop robot")
+                    os.system("shutdown -h now")
+            print("HE HE HE 2")
+            # gait and movement control
+            # if triger tort event, reset the movement number to 0
+            if gait_state or dance_state:
+                movement_ctl.resetMovementNumber()
+            movement_ctl.runMovementScheme(movement_switch)
+            food_location = movement_ctl.getMovemenLegsLocation()
+            attitude_location = movement_ctl.getMovemenAttitude()
+            robot_speed = movement_ctl.getMovemenSpeed()
+            controller.run(
+                state, command, food_location, attitude_location, robot_speed
+            )
+            print("HE HE HE 3")
+            for i in range(4):
+                # Convert state joint angles to joint positions
+                thigh = state.joint_angles[0, i]
+                hip = state.joint_angles[1, i]
+                calf = state.joint_angles[2, i]
+                print("HE HE HE 3.5")
+                await legs[i].move_to_joint_positions(
+                    JointPositions(values=[thigh, hip, calf, 0, 0, 0])
                 )
+                print("HE HE HE 3.9")
+            print("HE HE HE 4")
 
-                for i in range(4):
-                    # Convert state joint angles to joint positions
-                    thigh = state.joint_angles[0, i]
-                    hip = state.joint_angles[1, i]
-                    calf = state.joint_angles[2, i]
-                    await legs[i].move_to_joint_positions(
-                        JointPositions(values=[thigh, hip, calf, 0, 0, 0])
-                    )
-
-
-                # Update the pwm widths going to the servos
-                # hardware_interface.set_actuator_postions(state.joint_angles)
-                # current_leg[0] = state.joint_angles[0][0]
-                # current_leg[1] = state.joint_angles[1][0]
-                # current_leg[2]= state.joint_angles[2][0]
+            # Update the pwm widths going to the servos
+            # hardware_interface.set_actuator_postions(state.joint_angles)
+            # current_leg[0] = state.joint_angles[0][0]
+            # current_leg[1] = state.joint_angles[1][0]
+            # current_leg[2]= state.joint_angles[2][0]
 
 
 def main():

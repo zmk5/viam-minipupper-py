@@ -16,7 +16,7 @@ from MangDang.mini_pupper.HardwareInterface import send_servo_command
 
 
 class PupperLeg(Arm):
-    """Hera arm Viam subclassed component."""
+    """Mini Pupper Viam subclassed component."""
 
     def __init__(self, name: str, leg_idx: int):
         self.pwm_params = PWMParams()
@@ -74,23 +74,25 @@ class PupperLeg(Arm):
         extra: Optional[Dict[str, Any]] = None,
         **kwargs,
     ):
+        print("IN LEG HERE 0")
         operation = self.get_operation(kwargs)
 
         self.is_stopped = False
         self.joint_positions = positions
-
+        print("IN LEG HERE 1")
         for axis_idx in range(3):
             send_servo_command(
                 self.pwm_params,
                 self.servo_params,
-                self.joint_positions.values[0:3],
+                # self.joint_positions.values[0:3]
+                self.joint_positions.values[axis_idx],
                 axis_idx,
                 self.leg_idx,
             )
-
+        print("IN LEG HERE 2")
         if await operation.is_cancelled():
             await self.stop()
-
+        print("IN LEG HERE 3")
         self.is_stopped = True
 
     async def stop(self, extra: Optional[Dict[str, Any]] = None, **kwargs):
