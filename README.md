@@ -108,6 +108,87 @@ $ sudo apt install fuse libfuse2
 
 ## Installing and Running the Package
 
+We can install this directory by running the following local installation `pip` command within this repository.
+
+```bash
+~$ git clone https://github.com/zmk5/viam_minipupper_py
+~$ cd viam_minipupper_py
+~$ python3 -m pip install -e .
+```
+
+Once installed, we will need four terminals open or [`tmux`](https://github.com/tmux/tmux) with four windows.
+
+### First Terminal Window: Connecting the controller
+
+We'll need to connect our controller to the Raspberry Pi to retreive key presses from the `viam-server`. First, we'll use the `bluetoothctl` tool to scan our area for bluetooth devices. Make sure to put the controller in a pairing mode while we run the following command.
+
+```bash
+~$ sudo bluetoothctl scan on
+```
+
+Make sure to pay attention to the set of characters with the colons, `:`, since the address paired with the device name should be what we want to connect to. Once we know the address, we can connect using this next command.
+
+```bash
+~$ sudo bluetoothctl connect CONTROLLER_MAC_ADDRESS
+```
+
+### Second Terminal Window: Starting the `viam-server`
+
+Now that our hardware is connected, we can run the `viam-server` with our JSON config file. Add the following contents into a JSON file using `vim` or `nano`.
+
+```json
+{
+    "components": [
+        {
+            "name": "PS4 Controller",
+            "model": "gamepad",
+            "type": "input_controller",
+            "attributes": {
+                "dev_file": "",
+                "auto_reconnect": true
+            }
+        }
+    ],
+    "services": [
+        {
+            "name": "My Controller Service",
+            "type": "base_remote_control",
+            "attributes": {
+                "input_controller": "PS4 Controller"
+            }
+        }
+    ]
+}
+```
+
+Name the file whatever you wish. I'm creative, so I named it `my_config_file.json`. Now we can start the server with the JSON file as an argument.
+
+```bash
+~$ sudo ./viam-server -config my_config_file.json
+```
+
+### Third Terminal Window: Starting our custom component server
+
+Since we have a custom component, we will need to start up our remote server containing the new server code located in the repository as `remote.py`.
+
+```bash
+~$ cd viam_minipupper_py
+~$ python3 remote.py
+```
+
+Now the `viam-server` and our client has access to our custom components.
+
+### Fourth Terminal Window: Starting our client script
+
+Finally, we can run our control loop contained in the `client.py`. This file will connect to our `viam-server` and our custom component remote server to control the legs of the Mini Pupper using a playstation controller.
+
+```bash
+~$ cd viam_minipupper_py
+~$ python3 client.py
+```
+
+Thats it! We have a working robotic pupper using Viam now!
+
 ## EXTRA: Running this package within a Docker container
 
 First build the container image:
