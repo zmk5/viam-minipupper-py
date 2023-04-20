@@ -185,7 +185,7 @@ async def client():
     print("Creating joystick listener...")
 
     ps4_controller_obj = await connect_controller()
-    ps4_controller = ControllerViam.from_robot(ps4_controller_obj, "PS4 Controller")
+    ps4_controller = ControllerViam.from_robot(ps4_controller_obj, "PS4-Controller")
     joystick_interface = Joystick()
     await joystick_interface.handleController(ps4_controller)
     print("Done.")

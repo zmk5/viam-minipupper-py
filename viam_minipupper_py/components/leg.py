@@ -96,3 +96,14 @@ class PupperLeg(Arm):
 
     async def stop(self, extra: Optional[Dict[str, Any]] = None, **kwargs):
         self.is_stopped = True
+
+    async def is_moving(
+        self, *, extra: Optional[Dict[str, Any]] = None, timeout: Optional[float] = None
+    ) -> bool:
+        if extra is None:
+            extra = {}
+        request = IsMovingRequest(name=self.name)
+        response: IsMovingResponse = await self.client.IsMoving(
+            request, timeout=timeout
+        )
+        return response.is_moving
