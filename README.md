@@ -140,7 +140,7 @@ Now that our hardware is connected, we can run the `viam-server` with our JSON c
 {
     "components": [
         {
-            "name": "PS4 Controller",
+            "name": "PS4-Controller",
             "model": "gamepad",
             "type": "input_controller",
             "attributes": {
@@ -151,10 +151,11 @@ Now that our hardware is connected, we can run the `viam-server` with our JSON c
     ],
     "services": [
         {
-            "name": "My Controller Service",
+            "name": "My-Controller-Service",
             "type": "base_remote_control",
             "attributes": {
-                "input_controller": "PS4 Controller"
+                "base": "pupper",
+                "input_controller": "PS4-Controller"
             }
         }
     ]
